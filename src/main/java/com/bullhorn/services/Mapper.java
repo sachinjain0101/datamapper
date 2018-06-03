@@ -36,15 +36,16 @@ public class Mapper {
 	MapDAO dao;
 
 	// Entry Point
-	public TargetAssignments ProcessMapping(SourceAssignments srcAsses) throws JsonSyntaxException, ScriptException {
+	public TargetAssignments ProcessMapping(SourceAssignments srcAsses) throws JsonSyntaxException {
 		LOGGER.info("Processing DataMapping for {}", srcAsses.toString());
 		LOGGER.info("Recieved : {}", srcAsses.getData().toString());
 		Gson gson = new Gson();
-		List<AssignmentRequest> processedAsses = new ArrayList<AssignmentRequest>();
+		List<AssignmentRequest> processedAsses = new ArrayList<>();
 
 		// Get mapping from database
+		LOGGER.info("Map Name : {}", srcAsses.getMapName());
 		List<MapVO> mapDefs = dao.getMapDetail(srcAsses.getMapName());
-		LOGGER.debug("Map : {}", mapDefs.size());
+		LOGGER.info("Map : {}", mapDefs.size());
 		mapDefs.forEach((x) -> {
 			LOGGER.debug("Fetched from DB - {}", x.getAttribute() + " SJ " + x.getExpression());
 		});
@@ -55,30 +56,20 @@ public class Mapper {
 		// Process the mapping (Source to Target)
 		assignmentMaps.forEach((assignmentMap) -> {
 			AssignmentRequest req = null;
-			try {
-				req = gson.fromJson(Mapper.ProcessMapDefs(mapDefs, assignmentMap), AssignmentRequest.class);
-			} catch (JsonSyntaxException e) {
-				throw e;
-			} catch (ScriptException e) {
-				try {
-					throw e;
-				} catch (ScriptException e1) {
-					e1.printStackTrace();
-				}
-			}
+			req = gson.fromJson(Mapper.ProcessMapDefs(mapDefs, assignmentMap), AssignmentRequest.class);
 			processedAsses.add(req);
 		});
 
 		return new TargetAssignments(processedAsses);
 	}
 
-	public static List<Map<String, Object>> ListAssignmentsJsonMap(JsonObject[] jsonObj) {
-		List<Map<String, Object>> assignmentList = new ArrayList<Map<String, Object>>();
+	private static List<Map<String, Object>> ListAssignmentsJsonMap(JsonObject[] jsonObj) {
+		List<Map<String, Object>> assignmentList = new ArrayList<>();
 		LOGGER.info("No. of Assignments: " + jsonObj.length);
 
 		for (JsonObject obj : jsonObj) {
 			Set<String> keys = obj.keySet();
-			Map<String, Object> kvMap = new HashMap<String, Object>();
+			Map<String, Object> kvMap = new HashMap<>();
 			keys.forEach((k) -> {
 				LOGGER.info("[K]: " + k + " || [V]: " + obj.get(k).toString());
 				kvMap.put(k, obj.get(k));
@@ -89,7 +80,7 @@ public class Mapper {
 		return assignmentList;
 	}
 
-	public static String ProcessMapDefs(List<MapVO> mapDefs, Map<String, Object> assignmentMap) throws ScriptException {
+	private static String ProcessMapDefs(List<MapVO> mapDefs, Map<String, Object> assignmentMap){
 		// Initiate the JavaScript engine
 		ScriptEngine jsEngine = new ScriptEngineManager().getEngineByName(JAVASCRIPT_ENGINE_NAME);
 
@@ -97,7 +88,7 @@ public class Mapper {
 			jsEngine.put(entry.getKey(), entry.getValue().toString().replace("\"", ""));
 		}
 
-		Map<String, String> outMap = new LinkedHashMap<String, String>();
+		Map<String, String> outMap = new LinkedHashMap<>();
 
 		mapDefs.forEach((m) -> {
 			Object obj = null;

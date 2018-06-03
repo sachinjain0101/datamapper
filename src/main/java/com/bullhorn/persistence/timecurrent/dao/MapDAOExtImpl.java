@@ -12,8 +12,12 @@ import javax.transaction.Transactional;
 
 import com.bullhorn.persistence.timecurrent.model.MapVO;
 import com.bullhorn.persistence.timecurrent.model.TblIntegrationMappings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MapDAOExtImpl implements MapDAOExt {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(MapDAOExt.class);
 
 	@PersistenceContext(unitName = "")
 	private EntityManager em;
@@ -21,7 +25,7 @@ public class MapDAOExtImpl implements MapDAOExt {
 	@Override
 	@Transactional
 	public List<MapVO> getMapDetail(String mapName) {
-
+		LOGGER.info("{}",mapName);
 		CriteriaBuilder cb = em.getCriteriaBuilder();
 		CriteriaQuery<MapVO> cq = cb.createQuery(MapVO.class);
 		Root<TblIntegrationMappings> root = cq.from(TblIntegrationMappings.class);

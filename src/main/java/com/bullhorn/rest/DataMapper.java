@@ -31,12 +31,12 @@ public class DataMapper {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(DataMapper.class);
 	
-	@Autowired
-	Mapper mapper;
-	
-	@Autowired
+    @Autowired
 	MapDAO map;
-	
+
+    @Autowired
+    Mapper mapper;
+
 	@ApiOperation(value="Test to see Data Mapper is working or not.")
 	@RequestMapping(value = "/test", method = RequestMethod.GET)
 	public static String test() {
@@ -56,37 +56,37 @@ public class DataMapper {
 		LOGGER.info("{}",srcAsses.toString());
 		try {
 			return new ResponseEntity<>(mapper.ProcessMapping(srcAsses),HttpStatus.OK);
-		} catch (JsonSyntaxException | ScriptException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
-			return new ResponseEntity<>(null,HttpStatus.INTERNAL_SERVER_ERROR);
+			return new ResponseEntity<>(new TargetAssignments(null),HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
 }
 
 /*
-{
-	"client": "SOME",
-	"data": [{
-		"EmployeeFirstName": "Sachin WhatUp",
-		"EmployeeLastName": "Jain",
-		"EmployeeID": "1234",
-		"EmployeeSSN": "987654321",
-		"Codes": {
-			"X1": "Y1",
-			"X2": "Y2"
-		}
-	}, {
-		"EmployeeFirstName": "Shalina",
-		"EmployeeLastName": "Jain",
-		"EmployeeID": "",
-		"EmployeeSSN": "98989898",
-		"Codes": {
-			"X1": "Y1"
-		}
-	}],
-	"integrationKey": "12345",
-	"mapName": "Test",
-	"messageId": "67890"
-}
+    {
+        "client": "SOME",
+        "data": [{
+            "EmployeeFirstName": "Sachin WhatUp",
+            "EmployeeLastName": "Jain",
+            "EmployeeID": "1234",
+            "EmployeeSSN": "987654321",
+            "Codes": {
+                "X1": "Y1",
+                "X2": "Y2"
+            }
+        }, {
+            "EmployeeFirstName": "Shalina",
+            "EmployeeLastName": "Jain",
+            "EmployeeID": "",
+            "EmployeeSSN": "98989898",
+            "Codes": {
+                "X1": "Y1"
+            }
+        }],
+        "integrationKey": "12345",
+        "mapName": "Test",
+        "messageId": "67890"
+    }
 */
