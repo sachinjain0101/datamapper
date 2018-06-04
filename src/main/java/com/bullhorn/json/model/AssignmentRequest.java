@@ -19,13 +19,13 @@ public class AssignmentRequest {
 	public String RecID; 
 	
 	@ApiModelProperty(notes = "It's a JobDateTime from Listener @JobDateTime = DateTime.Now() DATETIME")
-	public String TransDateTime;
+	public String TransDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
 	
 	@ApiModelProperty(notes = "It's a client Code @Client from Listener VARCHAR(4)")
 	public String Client;
 	
 	@ApiModelProperty(notes = "It's a flag @FirstTime from Listener =\"Y\" CHAR(1)")
-	public String FirstTime;
+	public String FirstTime = "Y";
 	
 	@ApiModelProperty(notes = "[Required]")
 	public String Source;
@@ -229,7 +229,5 @@ public class AssignmentRequest {
 	public String UDFValues;
 	
 	public AssignmentRequest() {
-		this.TransDateTime = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).toString();
-		this.FirstTime="Y";
 	}
 }

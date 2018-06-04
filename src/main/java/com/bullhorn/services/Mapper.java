@@ -32,8 +32,10 @@ public class Mapper {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Mapper.class);
 	private static final String JAVASCRIPT_ENGINE_NAME = "nashorn";
 
+	final MapDAO dao;
+
 	@Autowired
-	MapDAO dao;
+	public Mapper(MapDAO dao){this.dao = dao;}
 
 	// Entry Point
 	public TargetAssignments ProcessMapping(SourceAssignments srcAsses) throws JsonSyntaxException {

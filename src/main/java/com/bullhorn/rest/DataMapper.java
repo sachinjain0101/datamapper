@@ -30,14 +30,18 @@ import io.swagger.annotations.ApiOperation;
 public class DataMapper {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(DataMapper.class);
-	
-    @Autowired
-	MapDAO map;
+
+    final MapDAO map;
+
+    final Mapper mapper;
 
     @Autowired
-    Mapper mapper;
+    public DataMapper(MapDAO map, Mapper mapper) {
+        this.map = map;
+        this.mapper = mapper;
+    }
 
-	@ApiOperation(value="Test to see Data Mapper is working or not.")
+    @ApiOperation(value="Test to see Data Mapper is working or not.")
 	@RequestMapping(value = "/test", method = RequestMethod.GET)
 	public static String test() {
 		return "Opera-DataMapper is running...";
