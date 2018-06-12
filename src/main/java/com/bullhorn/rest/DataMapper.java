@@ -1,7 +1,5 @@
 package com.bullhorn.rest;
 
-import javax.script.ScriptException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,9 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.bullhorn.json.model.SourceAssignments;
 import com.bullhorn.json.model.TargetAssignments;
 import com.bullhorn.json.model.TargetMappings;
-import com.bullhorn.persistence.timecurrent.dao.MapDAO;
+import com.bullhorn.orm.timecurrent.dao.MapDAO;
 import com.bullhorn.services.Mapper;
-import com.google.gson.JsonSyntaxException;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;

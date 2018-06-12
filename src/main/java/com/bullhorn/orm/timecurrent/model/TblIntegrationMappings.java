@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.bullhorn.persistence.timecurrent.model;
+package com.bullhorn.orm.timecurrent.model;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -160,7 +160,7 @@ public class TblIntegrationMappings implements Serializable {
 
     @Override
     public String toString() {
-        return "com.bullhorn.persistence.timecurrent.model.TblIntegrationMappings[ recordID=" + recordID + " ]";
+        return "TblIntegrationMappings[ recordID=" + recordID + " ]";
     }
     
 }

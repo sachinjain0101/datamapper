@@ -2,7 +2,7 @@ package com.bullhorn.json.model;
 
 import java.util.List;
 
-import com.bullhorn.persistence.timecurrent.model.MapVO;
+import com.bullhorn.orm.timecurrent.model.MapVO;
 
 public class TargetMappings {
 	public List<MapVO> Mappings;

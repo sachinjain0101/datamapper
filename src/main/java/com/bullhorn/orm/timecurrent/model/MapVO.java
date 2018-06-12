@@ -1,4 +1,4 @@
-package com.bullhorn.persistence.timecurrent.model;
+package com.bullhorn.orm.timecurrent.model;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
