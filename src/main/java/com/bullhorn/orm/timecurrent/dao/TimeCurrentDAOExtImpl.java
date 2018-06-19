@@ -1,6 +1,9 @@
 package com.bullhorn.orm.timecurrent.dao;
 
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -8,23 +11,26 @@ import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
-import javax.transaction.Transactional;
 
-import com.bullhorn.orm.timecurrent.model.MapVO;
-import com.bullhorn.orm.timecurrent.model.TblIntegrationFrontOfficeSystem;
-import com.bullhorn.orm.timecurrent.model.TblIntegrationMappings;
+import com.bullhorn.orm.timecurrent.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.transaction.annotation.Transactional;
 
 public class TimeCurrentDAOExtImpl implements TimeCurrentDAOExt {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TimeCurrentDAOExt.class);
 
-	@PersistenceContext(unitName = "")
+	@Autowired
+	@Qualifier("timeCurrentEntityManager")
 	private EntityManager em;
 
 	@Override
-	@Transactional
+	@Transactional("timeCurrentTransactionManager")
 	public List<MapVO> getMapDetail(String mapName) {
 		LOGGER.info("Getting data for - {}",mapName);
 		CriteriaBuilder cb = em.getCriteriaBuilder();
@@ -39,18 +45,37 @@ public class TimeCurrentDAOExtImpl implements TimeCurrentDAOExt {
 		return query.getResultList();
 	}
 
+    @Override
+	@Transactional("timeCurrentTransactionManager")
+	public void insertError(TblIntegrationErrors error){
+		em.persist(error);
+	}
+
+	@Autowired
+	@Qualifier("timeCurrentJdbcTemplate")
+	JdbcTemplate jdbcTemplate;
+
+	@Autowired
+	@Qualifier("timeCurrentNamedJdbcTemplate")
+	NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+
 	@Override
-	@Transactional
-	public List<TblIntegrationFrontOfficeSystem> findByStatus(boolean status) {
-		LOGGER.info("Getting data for status - {}",status);
-		CriteriaBuilder cb = em.getCriteriaBuilder();
-		CriteriaQuery<TblIntegrationFrontOfficeSystem> cq = cb.createQuery(TblIntegrationFrontOfficeSystem.class);
-		Root<TblIntegrationFrontOfficeSystem> root = cq.from(TblIntegrationFrontOfficeSystem.class);
-		cq.where(cb.equal(root.get("recordStatus"), status));
-		//cq.orderBy(cb.asc(root.get("recordId")));
+	public void insertIntoTblIntegrationsErrors(TblIntegrationErrors error){
+		String insertStr = "INSERT INTO TimeCurrent.dbo.tblIntegration_Errors \n" +
+				"(IntegrationKey, Client, FrontOfficeSystemRecordId, ProcessName, MessageId, ErrorSource, ErrorCode, ErrorDescription, CreateDateTime) \n" +
+				"VALUES (:integrationKey, :client, :frontOfficeSystemRecordId, :processName, :messageId, :errorSource, :errorCode, :errorDescription, :createDateTime); \n";
 
-		TypedQuery<TblIntegrationFrontOfficeSystem> query = em.createQuery(cq);
+		Map namedParameters = new HashMap();
+		namedParameters.put("integrationKey", error.getIntegrationKey());
+		namedParameters.put("client", error.getClient());
+		namedParameters.put("frontOfficeSystemRecordId", error.getFrontOfficeSystemRecordId());
+		namedParameters.put("processName", error.getProcessName());
+		namedParameters.put("messageId", error.getMessageId());
+		namedParameters.put("errorSource", error.getErrorSource());
+		namedParameters.put("errorCode", error.getErrorCode());
+		namedParameters.put("errorDescription", error.getErrorDescription());
+		namedParameters.put("createDateTime", new Date());
+		namedParameterJdbcTemplate.update(insertStr, namedParameters);
 
-		return query.getResultList();
 	}
 }

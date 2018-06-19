@@ -1,25 +1,21 @@
 package com.bullhorn.rest;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.bullhorn.json.model.SourceAssignments;
 import com.bullhorn.json.model.TargetAssignments;
 import com.bullhorn.json.model.TargetMappings;
+import com.bullhorn.orm.refreshWork.dao.MappedMessagesDAO;
+import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
 import com.bullhorn.orm.timecurrent.dao.MapDAO;
 import com.bullhorn.services.Mapper;
-
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @Api(value = "Base resource for Opera-DataMapper")
@@ -28,26 +24,30 @@ public class DataMapper {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(DataMapper.class);
 
-    final MapDAO map;
-
-    final Mapper mapper;
+	final ValidatedMessagesDAO validatedMessagesDAO;
+	final MapDAO mapDAO;
+	final MappedMessagesDAO mappedMessagesDAO;
+	final Mapper mapper;
 
     @Autowired
-    public DataMapper(MapDAO map, Mapper mapper) {
-        this.map = map;
-        this.mapper = mapper;
+    public DataMapper(@Qualifier("mapDAO") MapDAO mapDAO, @Qualifier("validatedMessagesDAO") ValidatedMessagesDAO validatedMessagesDAO
+			, @Qualifier("mappedMessagesDAO")MappedMessagesDAO mappedMessagesDAO, Mapper mapper) {
+        this.mapDAO = mapDAO;
+        this.validatedMessagesDAO = validatedMessagesDAO;
+        this.mappedMessagesDAO = mappedMessagesDAO;
+        this.mapper = new Mapper(this.mapDAO,this.validatedMessagesDAO,this.mappedMessagesDAO);
     }
 
-    @ApiOperation(value="Test to see Data Mapper is working or not.")
+	@ApiOperation(value="Test to see Data Mapper is working or not.")
 	@RequestMapping(value = "/test", method = RequestMethod.GET)
-	public static String test() {
+	public String test() {
 		return "Opera-DataMapper is running...";
 	}
 
 	@ApiOperation(value="Gets the map information.")
 	@RequestMapping(method = RequestMethod.GET, produces = "application/json")
 	public TargetMappings Get(@RequestParam(value="mapName") String mapName) {
-		return new TargetMappings(map.getMapDetail(mapName));
+		return new TargetMappings(mapDAO.getMapDetail(mapName));
 	}
 	
 	@ApiOperation(value = "Processes the source JSON and gives out the destination JSON.")

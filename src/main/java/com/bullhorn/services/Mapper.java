@@ -12,9 +12,15 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import com.bullhorn.orm.refreshWork.dao.MappedMessagesDAO;
+import com.bullhorn.orm.refreshWork.dao.RefreshWorkDAOExt;
+import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
+import com.bullhorn.orm.refreshWork.model.TblIntegrationServiceBusMessages;
+import com.bullhorn.orm.refreshWork.model.TblIntegrationValidatedMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.bullhorn.json.model.AssignmentRequest;
@@ -32,11 +38,41 @@ public class Mapper {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Mapper.class);
 	private static final String JAVASCRIPT_ENGINE_NAME = "nashorn";
 
-	final MapDAO dao;
+	final MapDAO mapDAO;
+	final ValidatedMessagesDAO validatedMessagesDAO;
+	final MappedMessagesDAO mappedMessagesDAO;
 
 	@Autowired
-	public Mapper(MapDAO dao){this.dao = dao;}
+	public Mapper(MapDAO mapDAO, ValidatedMessagesDAO validatedMessagesDAO, MappedMessagesDAO mappedMessagesDAO){
+		this.validatedMessagesDAO = validatedMessagesDAO;
+		this.mappedMessagesDAO = mappedMessagesDAO;
+		this.mapDAO = mapDAO;
+	}
 
+	private void logMessages(List<TblIntegrationValidatedMessages> msgs){
+		LOGGER.info("*****************");
+		msgs.forEach((m) -> {
+					LOGGER.info("--- --- {} - {} - {}", m.getRecordId(), m.getProcessed(), m.getErrorDescription());
+				}
+		);
+	}
+
+	private List<TblIntegrationValidatedMessages> validatedMessages;
+
+	@Scheduled(fixedDelay = 5000, initialDelay = 3000)
+	public void run() {
+		LOGGER.info("Running the Data Mapper");
+		validatedMessages = validatedMessagesDAO.findAllValidated();
+		logMessages(validatedMessages);
+
+		//List<TblIntegrationValidatedMessages> validMessages = getValidMessages();
+
+		//validatedMessagesDAO.batchInsertValidatedMessages(validMessages);
+		//serviceBusMessagesDAO.updateAllDownloaded(downloadedMessages);
+
+		//LOGGER.info("********* DONE",validMessages.size());
+	}
+	
 	// Entry Point
 	public TargetAssignments ProcessMapping(SourceAssignments srcAsses) throws JsonSyntaxException {
 		LOGGER.info("Processing DataMapping for {}", srcAsses.toString());
@@ -46,7 +82,7 @@ public class Mapper {
 
 		// Get mapping from database
 		LOGGER.info("Map Name : {}", srcAsses.getMapName());
-		List<MapVO> mapDefs = dao.getMapDetail(srcAsses.getMapName());
+		List<MapVO> mapDefs = mapDAO.getMapDetail(srcAsses.getMapName());
 		LOGGER.info("Map : {}", mapDefs.size());
 		mapDefs.forEach((x) -> {
 			LOGGER.debug("Fetched from DB - {}", x.getAttribute() + " SJ " + x.getExpression());
