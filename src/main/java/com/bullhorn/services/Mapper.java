@@ -1,22 +1,20 @@
 package com.bullhorn.services;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import com.bullhorn.app.OperaStatus;
 import com.bullhorn.orm.refreshWork.dao.MappedMessagesDAO;
 import com.bullhorn.orm.refreshWork.dao.RefreshWorkDAOExt;
 import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
+import com.bullhorn.orm.refreshWork.model.TblIntegrationMappedMessages;
 import com.bullhorn.orm.refreshWork.model.TblIntegrationServiceBusMessages;
 import com.bullhorn.orm.refreshWork.model.TblIntegrationValidatedMessages;
+import com.google.gson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +26,6 @@ import com.bullhorn.json.model.SourceAssignments;
 import com.bullhorn.json.model.TargetAssignments;
 import com.bullhorn.orm.timecurrent.dao.MapDAO;
 import com.bullhorn.orm.timecurrent.model.MapVO;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 
 @Component
 public class Mapper {
@@ -52,7 +47,7 @@ public class Mapper {
 	private void logMessages(List<TblIntegrationValidatedMessages> msgs){
 		LOGGER.info("*****************");
 		msgs.forEach((m) -> {
-					LOGGER.info("--- --- {} - {} - {}", m.getRecordId(), m.getProcessed(), m.getErrorDescription());
+					LOGGER.info("--- --- {} - {} - {}", m.getClient(), m.getSequenceNumber(), m.getProcessed());
 				}
 		);
 	}
@@ -64,6 +59,45 @@ public class Mapper {
 		LOGGER.info("Running the Data Mapper");
 		validatedMessages = validatedMessagesDAO.findAllValidated();
 		logMessages(validatedMessages);
+		// Sorting the result to process in the right sequence
+		validatedMessages.sort(Comparator.comparing(TblIntegrationValidatedMessages::getClient).thenComparing(TblIntegrationValidatedMessages::getSequenceNumber));
+		//logMessages(validatedMessages);
+
+		for(TblIntegrationValidatedMessages m: validatedMessages){
+			LOGGER.info("--- --- {} - {} - {}", m.getClient(), m.getSequenceNumber(), m.getProcessed());
+			SourceAssignments assignments = createSourceMessage(m);
+			TargetAssignments targetAssignments = processMapping(assignments);
+			LOGGER.info("*******************************");
+			LOGGER.info("********************* {}",targetAssignments.toString());
+
+			Gson gson = new Gson();
+
+			TblIntegrationMappedMessages tblIntegrationMappedMessages = new TblIntegrationMappedMessages();
+
+			tblIntegrationMappedMessages.setClient(m.getClient());
+			tblIntegrationMappedMessages.setIntegrationKey(m.getIntegrationKey());
+			tblIntegrationMappedMessages.setMessageId(m.getMessageId());
+			tblIntegrationMappedMessages.setSequenceNumber(m.getSequenceNumber());
+			tblIntegrationMappedMessages.setProcessed(null);
+			tblIntegrationMappedMessages.setErrorDescription(null);
+			tblIntegrationMappedMessages.setMapName(m.getMapName());
+			tblIntegrationMappedMessages.setMessage(m.getMessage());
+			tblIntegrationMappedMessages.setMappedMessage(gson.toJson(targetAssignments,TargetAssignments.class));
+			tblIntegrationMappedMessages.setNoOfAssignments(targetAssignments.Assignments.size());
+			tblIntegrationMappedMessages.setFrontOfficeSystemRecordID(m.getFrontOfficeSystemRecordID());
+			tblIntegrationMappedMessages.setClientRecordID(m.getClientRecordID());
+			tblIntegrationMappedMessages.setServiceBusMessagesRecordID(m.getServiceBusMessagesRecordID());
+			tblIntegrationMappedMessages.setValidatedMessagesRecordID(m.getRecordId());
+
+			mappedMessagesDAO.save(tblIntegrationMappedMessages);
+
+			m.setProcessed(OperaStatus.VALIDATED.getValue());
+
+			validatedMessagesDAO.save(m);
+
+		}
+
+
 
 		//List<TblIntegrationValidatedMessages> validMessages = getValidMessages();
 
@@ -72,9 +106,30 @@ public class Mapper {
 
 		//LOGGER.info("********* DONE",validMessages.size());
 	}
+
+
+	public SourceAssignments createSourceMessage(TblIntegrationValidatedMessages msg){
+		SourceAssignments sourceAssignments = new SourceAssignments();
+		sourceAssignments.setClient(msg.getClient());
+		sourceAssignments.setIntegrationKey(msg.getIntegrationKey());
+		sourceAssignments.setMapName(msg.getMapName());
+		sourceAssignments.setMessageId(msg.getMessageId());
+
+		JsonParser parser = new JsonParser();
+		JsonArray array = parser.parse(msg.getMessage()).getAsJsonArray();
+		JsonObject[] data = new JsonObject[array.size()];
+		for(int i=0; i<array.size();i++){
+			System.out.println(array.get(i));
+			Arrays.fill(data,array.get(i));
+		}
+
+		sourceAssignments.setData(data);
+
+		return sourceAssignments;
+	}
 	
-	// Entry Point
-	public TargetAssignments ProcessMapping(SourceAssignments srcAsses) throws JsonSyntaxException {
+	// Entry Point from RestURl
+	public TargetAssignments processMapping(SourceAssignments srcAsses) throws JsonSyntaxException {
 		LOGGER.info("Processing DataMapping for {}", srcAsses.toString());
 		LOGGER.info("Recieved : {}", srcAsses.getData().toString());
 		Gson gson = new Gson();
@@ -89,19 +144,19 @@ public class Mapper {
 		});
 
 		// Get list of assignments and the corresponding JSON map from the recieved payload
-		List<Map<String, Object>> assignmentMaps = Mapper.ListAssignmentsJsonMap(srcAsses.getData());
+		List<Map<String, Object>> assignmentMaps = listAssignmentsJsonMap(srcAsses.getData());
 
 		// Process the mapping (Source to Target)
 		assignmentMaps.forEach((assignmentMap) -> {
 			AssignmentRequest req = null;
-			req = gson.fromJson(Mapper.ProcessMapDefs(mapDefs, assignmentMap), AssignmentRequest.class);
+			req = gson.fromJson(processMapDefs(mapDefs, assignmentMap), AssignmentRequest.class);
 			processedAsses.add(req);
 		});
 
 		return new TargetAssignments(processedAsses);
 	}
 
-	private static List<Map<String, Object>> ListAssignmentsJsonMap(JsonObject[] jsonObj) {
+	private List<Map<String, Object>> listAssignmentsJsonMap(JsonObject[] jsonObj) {
 		List<Map<String, Object>> assignmentList = new ArrayList<>();
 		LOGGER.info("No. of Assignments: " + jsonObj.length);
 
@@ -118,7 +173,7 @@ public class Mapper {
 		return assignmentList;
 	}
 
-	private static String ProcessMapDefs(List<MapVO> mapDefs, Map<String, Object> assignmentMap){
+	private String processMapDefs(List<MapVO> mapDefs, Map<String, Object> assignmentMap){
 		// Initiate the JavaScript engine
 		ScriptEngine jsEngine = new ScriptEngineManager().getEngineByName(JAVASCRIPT_ENGINE_NAME);
 

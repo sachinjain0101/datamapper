@@ -36,7 +36,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
     @Override
     public void batchInsertMappedMessages(List<TblIntegrationMappedMessages> msgs) {
         String sql = "INSERT INTO tblIntegration_ValidatedMessages " +
-                "(Client, IntegrationKey, MessageId, SequenceNumber, Processed, ErrorDescription, Map, " +
+                "(Client, IntegrationKey, MessageId, SequenceNumber, Processed, ErrorDescription, MapName, " +
                 " Message, MappedMessage, NoOfAssignments, FrontOfficeSystemRecordID, ClientRecordID, ServiceBusMessagesRecordID, ValidatedMessagesRecordID) " +
                 "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         int[] updateCounts = jdbcTemplate.batchUpdate(
@@ -49,7 +49,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
                         ps.setLong(4, msgs.get(i).getSequenceNumber());
                         ps.setInt(5, msgs.get(i).getProcessed());
                         ps.setString(6, msgs.get(i).getErrorDescription());
-                        ps.setString(7, msgs.get(i).getMap());
+                        ps.setString(7, msgs.get(i).getMapName());
                         ps.setString(8, msgs.get(i).getMessage());
                         ps.setString(9, msgs.get(i).getMappedMessage());
                         ps.setInt(10, msgs.get(i).getNoOfAssignments());

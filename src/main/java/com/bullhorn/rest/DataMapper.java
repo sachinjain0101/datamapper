@@ -56,7 +56,7 @@ public class DataMapper {
 	public ResponseEntity<TargetAssignments> Process(@RequestBody SourceAssignments srcAsses) {
 		LOGGER.info("{}",srcAsses.toString());
 		try {
-			return new ResponseEntity<>(mapper.ProcessMapping(srcAsses),HttpStatus.OK);
+			return new ResponseEntity<>(mapper.processMapping(srcAsses),HttpStatus.OK);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return new ResponseEntity<>(new TargetAssignments(null),HttpStatus.INTERNAL_SERVER_ERROR);
