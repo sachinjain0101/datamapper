@@ -32,7 +32,7 @@ public class TimeCurrentDAOExtImpl implements TimeCurrentDAOExt {
 	@Override
 	@Transactional("timeCurrentTransactionManager")
 	public List<MapVO> getMapDetail(String mapName) {
-		LOGGER.info("Getting data for - {}",mapName);
+		LOGGER.debug("Getting data for - {}",mapName);
 		CriteriaBuilder cb = em.getCriteriaBuilder();
 		CriteriaQuery<MapVO> cq = cb.createQuery(MapVO.class);
 		Root<TblIntegrationMappings> root = cq.from(TblIntegrationMappings.class);

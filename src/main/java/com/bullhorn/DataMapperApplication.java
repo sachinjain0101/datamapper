@@ -51,14 +51,14 @@ public class DataMapperApplication {
 
 	@EventListener
 	public void init(ContextRefreshedEvent event) {
-		LOGGER.info("Starting Data Mapper");
+		LOGGER.debug("Starting Data Mapper");
 		Mapper mapper = new Mapper (mapDAO, validatedMessagesDAO, mappedMessagesDAO);
 		mapper.run();
 	}
 
 	@PreDestroy
 	public void destroy() {
-		LOGGER.info("Shutting down Data Mapper");
+		LOGGER.debug("Shutting down Data Mapper");
 	}
 
 }

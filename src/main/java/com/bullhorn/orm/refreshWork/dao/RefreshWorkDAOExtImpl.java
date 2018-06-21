@@ -67,7 +67,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
 
     @Override
     public List<TblIntegrationValidatedMessages> findAllValidated() {
-        LOGGER.info("Getting validated messages");
+        LOGGER.debug("Getting validated messages");
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<TblIntegrationValidatedMessages> cq = cb.createQuery(TblIntegrationValidatedMessages.class);
         Root<TblIntegrationValidatedMessages> root = cq.from(TblIntegrationValidatedMessages.class);
@@ -82,7 +82,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
 
     @Override
     public boolean updateAllValidated(List<TblIntegrationValidatedMessages> msgs) {
-        LOGGER.info("Updating validated messages");
+        LOGGER.debug("Updating validated messages");
         String sql = "UPDATE tblIntegration_ValidatedMessages " +
                 "SET Processed = ? , ErrorDescription = ? " +
                 "WHERE RecordID = ?";

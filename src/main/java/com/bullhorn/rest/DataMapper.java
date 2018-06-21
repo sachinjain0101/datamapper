@@ -54,7 +54,7 @@ public class DataMapper {
 	@RequestMapping(value = "/process",method = RequestMethod.POST, produces = "application/json")
 	@ResponseBody
 	public ResponseEntity<TargetAssignments> Process(@RequestBody SourceAssignments srcAsses) {
-		LOGGER.info("{}",srcAsses.toString());
+		LOGGER.debug("{}",srcAsses.toString());
 		try {
 			return new ResponseEntity<>(mapper.processMapping(srcAsses),HttpStatus.OK);
 		} catch (Exception e) {

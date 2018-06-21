@@ -51,7 +51,7 @@ public class Mapper {
 
     @Scheduled(fixedDelay = 5000, initialDelay = 1000)
     public void run() {
-        LOGGER.info("Running the Data Mapper");
+        LOGGER.debug("Running the Data Mapper");
         validatedMessages = validatedMessagesDAO.findAllValidated();
         // Sorting the result to process in the right sequence
         validatedMessages.sort(Comparator.comparing(TblIntegrationValidatedMessages::getClient).thenComparing(TblIntegrationValidatedMessages::getSequenceNumber));
@@ -60,10 +60,10 @@ public class Mapper {
             TargetAssignments targetAssignments = null;
             TblIntegrationMappedMessages tblIntegrationMappedMessages = null;
             try {
-                LOGGER.info("--- --- {} - {} - {}", msg.getClient(), msg.getSequenceNumber(), msg.getProcessed());
+                LOGGER.debug("--- --- {} - {} - {}", msg.getClient(), msg.getSequenceNumber(), msg.getProcessed());
                 targetAssignments = processMapping(createSourceMessage(msg));
-                //LOGGER.info("*******************************");
-                //LOGGER.info("********************* {}",targetAssignments.toString());
+                //LOGGER.debug("*******************************");
+                //LOGGER.debug("********************* {}",targetAssignments.toString());
                 tblIntegrationMappedMessages = createMappedMessagesRecord(msg, targetAssignments, null);
                 msg.setProcessed(OperaStatus.VALIDATED.toString());
             } catch (Exception e) {
@@ -127,16 +127,16 @@ public class Mapper {
 
     // Entry Point from RestURl
     public TargetAssignments processMapping(SourceAssignments srcAsses) throws Exception {
-        LOGGER.info("Processing DataMapping for {}", srcAsses.toString());
-        LOGGER.info("Recieved : {}", srcAsses.getData().toString());
+        LOGGER.debug("Processing DataMapping for {}", srcAsses.toString());
+        LOGGER.debug("Recieved : {}", srcAsses.getData().toString());
         Gson gson = new Gson();
         List<AssignmentRequest> processedAsses = new ArrayList<>();
 
         try {
             // Get mapping from database
-            LOGGER.info("Map Name : {}", srcAsses.getMapName());
+            LOGGER.debug("Map Name : {}", srcAsses.getMapName());
             List<MapVO> mapDefs = mapDAO.getMapDetail(srcAsses.getMapName());
-            LOGGER.info("Map : {}", mapDefs.size());
+            LOGGER.debug("Map : {}", mapDefs.size());
             // mapDefs.forEach((x) -> {
             // 	LOGGER.debug("Fetched from DB - {}", x.getAttribute() + " SJ " + x.getExpression());
             // });
@@ -160,13 +160,13 @@ public class Mapper {
 
     private List<Map<String, Object>> listAssignmentsJsonMap(JsonObject[] jsonObj) {
         List<Map<String, Object>> assignmentList = new ArrayList<>();
-        LOGGER.info("No. of Assignments: " + jsonObj.length);
+        LOGGER.debug("No. of Assignments: " + jsonObj.length);
 
         for (JsonObject obj : jsonObj) {
             Set<String> keys = obj.keySet();
             Map<String, Object> kvMap = new HashMap<>();
             keys.forEach((k) -> {
-                //LOGGER.info("[K]: " + k + " || [V]: " + obj.get(k).toString());
+                //LOGGER.debug("[K]: " + k + " || [V]: " + obj.get(k).toString());
                 kvMap.put(k, obj.get(k));
             });
             assignmentList.add(kvMap);
@@ -188,7 +188,7 @@ public class Mapper {
             for (MapVO m : mapDefs) {
                 String val = "";
                 // Execution of JS expression
-                // LOGGER.info("******* {} {}", m.getExpression());
+                // LOGGER.debug("******* {} {}", m.getExpression());
                 if (m.getExpression() != null && !m.getExpression().isEmpty())
                     val = jsEngine.eval(m.getExpression()).toString();
 
@@ -211,7 +211,7 @@ public class Mapper {
                 else if (m.getAttribute().equals("RecID"))
                     val = genID;
 
-                //LOGGER.info("{} - {}", m.getAttribute(), val);
+                //LOGGER.debug("{} - {}", m.getAttribute(), val);
                 outMap.put(m.getAttribute(), val);
             }
         } catch (Exception e) {
