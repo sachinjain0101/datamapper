@@ -36,7 +36,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
     @Override
     public void batchInsertMappedMessages(List<TblIntegrationMappedMessages> msgs) {
         String sql = "INSERT INTO tblIntegration_ValidatedMessages " +
-                "(Client, IntegrationKey, MessageId, SequenceNumber, Processed, ErrorDescription, MapName, " +
+                "(Client, IntegrationKey, MessageId, SequenceNumber, Status, ErrorDescription, MapName, " +
                 " Message, MappedMessage, NoOfAssignments, FrontOfficeSystemRecordID, ClientRecordID, ServiceBusMessagesRecordID, ValidatedMessagesRecordID) " +
                 "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         int[] updateCounts = jdbcTemplate.batchUpdate(
@@ -47,7 +47,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
                         ps.setString(2, msgs.get(i).getIntegrationKey());
                         ps.setString(3, msgs.get(i).getMessageId());
                         ps.setLong(4, msgs.get(i).getSequenceNumber());
-                        ps.setString(5, msgs.get(i).getProcessed());
+                        ps.setString(5, msgs.get(i).getStatus());
                         ps.setString(6, msgs.get(i).getErrorDescription());
                         ps.setString(7, msgs.get(i).getMapName());
                         ps.setString(8, msgs.get(i).getMessage());
@@ -71,7 +71,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<TblIntegrationValidatedMessages> cq = cb.createQuery(TblIntegrationValidatedMessages.class);
         Root<TblIntegrationValidatedMessages> root = cq.from(TblIntegrationValidatedMessages.class);
-        cq.where(cb.isNull(root.get("processed")));
+        cq.where(cb.isNull(root.get("status")));
         cq.orderBy(cb.desc(root.get("recordId")));
 
         TypedQuery<TblIntegrationValidatedMessages> query = em.createQuery(cq);
@@ -84,13 +84,13 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
     public boolean updateAllValidated(List<TblIntegrationValidatedMessages> msgs) {
         LOGGER.debug("Updating validated messages");
         String sql = "UPDATE tblIntegration_ValidatedMessages " +
-                "SET Processed = ? , ErrorDescription = ? " +
+                "SET Status = ? , ErrorDescription = ? " +
                 "WHERE RecordID = ?";
         int[] updateCounts = jdbcTemplate.batchUpdate(
                 sql,
                 new BatchPreparedStatementSetter() {
                     public void setValues(PreparedStatement ps, int i) throws SQLException {
-                        ps.setString(1, msgs.get(i).getProcessed());
+                        ps.setString(1, msgs.get(i).getStatus());
                         ps.setString(2, msgs.get(i).getErrorDescription());
                         ps.setLong(3, msgs.get(i).getRecordId());
                     }

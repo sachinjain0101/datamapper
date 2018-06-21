@@ -60,15 +60,13 @@ public class Mapper {
             TargetAssignments targetAssignments = null;
             TblIntegrationMappedMessages tblIntegrationMappedMessages = null;
             try {
-                LOGGER.debug("--- --- {} - {} - {}", msg.getClient(), msg.getSequenceNumber(), msg.getProcessed());
+                LOGGER.debug("--- --- {} - {} - {}", msg.getClient(), msg.getSequenceNumber(), msg.getStatus());
                 targetAssignments = processMapping(createSourceMessage(msg));
-                //LOGGER.debug("*******************************");
-                //LOGGER.debug("********************* {}",targetAssignments.toString());
                 tblIntegrationMappedMessages = createMappedMessagesRecord(msg, targetAssignments, null);
-                msg.setProcessed(OperaStatus.VALIDATED.toString());
+                msg.setStatus(OperaStatus.VALIDATED.toString());
             } catch (Exception e) {
                 mappedMessagesDAO.save(createMappedMessagesRecord(msg, targetAssignments, ExceptionUtils.getStackTrace(e)));
-                msg.setProcessed(OperaStatus.VALIDATED_WITH_MAPPING_ERROR.toString());
+                msg.setStatus(OperaStatus.VALIDATED_WITH_MAPPING_ERROR.toString());
                 msg.setErrorDescription("Refer to MappedMessages table for description");
             }
             if (tblIntegrationMappedMessages != null)
@@ -86,11 +84,11 @@ public class Mapper {
         tblIntegrationMappedMessages.setMessageId(m.getMessageId());
         tblIntegrationMappedMessages.setSequenceNumber(m.getSequenceNumber());
         if (errorDescription != null) {
-            tblIntegrationMappedMessages.setProcessed(OperaStatus.MAPPING_ERROR.toString());
+            tblIntegrationMappedMessages.setStatus(OperaStatus.MAPPING_ERROR.toString());
             tblIntegrationMappedMessages.setErrorDescription(errorDescription);
             tblIntegrationMappedMessages.setNoOfAssignments(null);
         } else {
-            tblIntegrationMappedMessages.setProcessed(OperaStatus.MAPPED.toString());
+            tblIntegrationMappedMessages.setStatus(OperaStatus.MAPPED.toString());
             tblIntegrationMappedMessages.setErrorDescription(null);
             tblIntegrationMappedMessages.setNoOfAssignments(targetAssignments.Assignments.size());
         }
