@@ -47,7 +47,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
                         ps.setString(2, msgs.get(i).getIntegrationKey());
                         ps.setString(3, msgs.get(i).getMessageId());
                         ps.setLong(4, msgs.get(i).getSequenceNumber());
-                        ps.setInt(5, msgs.get(i).getProcessed());
+                        ps.setString(5, msgs.get(i).getProcessed());
                         ps.setString(6, msgs.get(i).getErrorDescription());
                         ps.setString(7, msgs.get(i).getMapName());
                         ps.setString(8, msgs.get(i).getMessage());
@@ -67,7 +67,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
 
     @Override
     public List<TblIntegrationValidatedMessages> findAllValidated() {
-        LOGGER.info("Getting downloaded messages");
+        LOGGER.info("Getting validated messages");
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<TblIntegrationValidatedMessages> cq = cb.createQuery(TblIntegrationValidatedMessages.class);
         Root<TblIntegrationValidatedMessages> root = cq.from(TblIntegrationValidatedMessages.class);
@@ -82,7 +82,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
 
     @Override
     public boolean updateAllValidated(List<TblIntegrationValidatedMessages> msgs) {
-        LOGGER.info("Updating downloaded messages");
+        LOGGER.info("Updating validated messages");
         String sql = "UPDATE tblIntegration_ValidatedMessages " +
                 "SET Processed = ? , ErrorDescription = ? " +
                 "WHERE RecordID = ?";
@@ -90,7 +90,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
                 sql,
                 new BatchPreparedStatementSetter() {
                     public void setValues(PreparedStatement ps, int i) throws SQLException {
-                        ps.setInt(1, msgs.get(i).getProcessed());
+                        ps.setString(1, msgs.get(i).getProcessed());
                         ps.setString(2, msgs.get(i).getErrorDescription());
                         ps.setLong(3, msgs.get(i).getRecordId());
                     }

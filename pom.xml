@@ -28,7 +28,7 @@
 
 	<dependencies>
 
-		<dependency>ß
+		<dependency>
 			<groupId>com.bullhorn</groupId>
 			<artifactId>datamodel</artifactId>
 			<version>1.0.0</version>
@@ -134,7 +134,7 @@
 								<resource>
 									<directory>${basedir}</directory>
 									<includes>
-									<include>application.properties</include>
+									<include>*.properties</include>
 									</includes>
 									<filtering>true</filtering>
 								</resource>

@@ -20,7 +20,7 @@ import java.util.HashMap;
 
 @Primary
 @Configuration
-@PropertySource({"classpath:orm-multi-db.properties"})
+@PropertySource({"file:orm-multi-db.properties"})
 @EnableJpaRepositories(basePackages = "com.bullhorn.orm.timecurrent.dao", entityManagerFactoryRef = "timeCurrentEntityManager", transactionManagerRef = "timeCurrentTransactionManager")
 public class TimeCurrentDBConfig {
     @Autowired
