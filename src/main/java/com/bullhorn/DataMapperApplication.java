@@ -52,7 +52,7 @@ public class DataMapperApplication {
 	@EventListener
 	public void init(ContextRefreshedEvent event) {
 		LOGGER.debug("Starting Data Mapper");
-		Mapper mapper = new Mapper (mapDAO, validatedMessagesDAO, mappedMessagesDAO);
+		Mapper mapper = new Mapper (mapDAO, validatedMessagesDAO, mappedMessagesDAO, assignmentProcessorDAO);
 		mapper.run();
 	}
 

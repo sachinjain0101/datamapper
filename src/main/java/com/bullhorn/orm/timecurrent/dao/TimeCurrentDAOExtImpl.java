@@ -78,4 +78,17 @@ public class TimeCurrentDAOExtImpl implements TimeCurrentDAOExt {
 		namedParameterJdbcTemplate.update(insertStr, namedParameters);
 
 	}
+
+	@Override
+	public Map<String,String> getIntegrationConfig(){
+		String sqlStr = "SELECT * FROM TimeCurrent.dbo.tblIntegration_Config ORDER BY RecordID DESC";
+
+		List<Map<String, Object>> rows = jdbcTemplate.queryForList(sqlStr);
+		Map<String,String> config = new HashMap<>();
+		for(Map row:rows){
+
+			config.put(row.get("CfgKey").toString(),row.get("CfgValue").toString());
+		}
+		return config;
+	}
 }

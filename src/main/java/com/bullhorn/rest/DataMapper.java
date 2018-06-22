@@ -1,10 +1,11 @@
 package com.bullhorn.rest;
 
-import com.bullhorn.json.model.SourceAssignments;
 import com.bullhorn.json.model.TargetAssignments;
+import com.bullhorn.json.model.SourceAssignments;
 import com.bullhorn.json.model.TargetMappings;
 import com.bullhorn.orm.refreshWork.dao.MappedMessagesDAO;
 import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
+import com.bullhorn.orm.timecurrent.dao.AssignmentProcessorDAO;
 import com.bullhorn.orm.timecurrent.dao.MapDAO;
 import com.bullhorn.services.Mapper;
 import io.swagger.annotations.Api;
@@ -17,6 +18,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @RestController
 @Api(value = "Base resource for Opera-DataMapper")
 @RequestMapping("/maps")
@@ -28,14 +32,16 @@ public class DataMapper {
 	final MapDAO mapDAO;
 	final MappedMessagesDAO mappedMessagesDAO;
 	final Mapper mapper;
+	final AssignmentProcessorDAO assignmentProcessorDAO;
 
     @Autowired
     public DataMapper(@Qualifier("mapDAO") MapDAO mapDAO, @Qualifier("validatedMessagesDAO") ValidatedMessagesDAO validatedMessagesDAO
-			, @Qualifier("mappedMessagesDAO")MappedMessagesDAO mappedMessagesDAO, Mapper mapper) {
+			, @Qualifier("mappedMessagesDAO")MappedMessagesDAO mappedMessagesDAO, @Qualifier("assignmentProcessorDAO")AssignmentProcessorDAO assignmentProcessorDAO,Mapper mapper) {
         this.mapDAO = mapDAO;
         this.validatedMessagesDAO = validatedMessagesDAO;
         this.mappedMessagesDAO = mappedMessagesDAO;
-        this.mapper = new Mapper(this.mapDAO,this.validatedMessagesDAO,this.mappedMessagesDAO);
+        this.assignmentProcessorDAO = assignmentProcessorDAO;
+        this.mapper = new Mapper(this.mapDAO,this.validatedMessagesDAO,this.mappedMessagesDAO, this.assignmentProcessorDAO);
     }
 
 	@ApiOperation(value="Test to see Data Mapper is working or not.")
@@ -53,13 +59,13 @@ public class DataMapper {
 	@ApiOperation(value = "Processes the source JSON and gives out the destination JSON.")
 	@RequestMapping(value = "/process",method = RequestMethod.POST, produces = "application/json")
 	@ResponseBody
-	public ResponseEntity<TargetAssignments> Process(@RequestBody SourceAssignments srcAsses) {
+	public ResponseEntity<List<TargetAssignments>> Process(@RequestBody SourceAssignments srcAsses) {
 		LOGGER.debug("{}",srcAsses.toString());
 		try {
 			return new ResponseEntity<>(mapper.processMapping(srcAsses),HttpStatus.OK);
 		} catch (Exception e) {
 			e.printStackTrace();
-			return new ResponseEntity<>(new TargetAssignments(null),HttpStatus.INTERNAL_SERVER_ERROR);
+			return new ResponseEntity<>(new ArrayList<>(),HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
