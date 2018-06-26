@@ -1,4 +1,4 @@
-package com.bullhorn.config;
+package com.bullhorn.config.db;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -14,23 +14,28 @@ import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.sql.DataSource;
 import java.util.HashMap;
 
+@Primary
 @Configuration
 @PropertySource({"file:orm-multi-db.properties"})
-@EnableJpaRepositories(basePackages = "com.bullhorn.orm.refreshWork.dao", entityManagerFactoryRef = "refreshWorkEntityManager", transactionManagerRef = "refreshWorkTransactionManager")
-public class RefreshWorkDBConfig {
-    @Autowired
+@EnableJpaRepositories(basePackages = "com.bullhorn.orm.timecurrent.dao", entityManagerFactoryRef = "timeCurrentEntityManager", transactionManagerRef = "timeCurrentTransactionManager")
+public class TimeCurrentDBConfig {
+
     private Environment env;
 
+    @Autowired
+    public void setEnv(Environment env) {
+        this.env = env;
+    }
+
     @Bean
-    public LocalContainerEntityManagerFactoryBean refreshWorkEntityManager() {
+    public LocalContainerEntityManagerFactoryBean timeCurrentEntityManager() {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
-        em.setDataSource(refreshWorkDataSource());
-        em.setPackagesToScan(new String[]{"com.bullhorn.orm.refreshWork.model"});
+        em.setDataSource(timeCurrentDataSource());
+        em.setPackagesToScan(new String[]{"com.bullhorn.orm.timecurrent.model"});
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
         em.setJpaVendorAdapter(vendorAdapter);
         HashMap<String, Object> properties = new HashMap<>();
@@ -38,40 +43,35 @@ public class RefreshWorkDBConfig {
         properties.put("hibernate.dialect", env.getProperty("hibernate.dialect"));
         properties.put("hibernate.show_sql",env.getProperty("hibernate.show_sql"));
         properties.put("hibernate.cache.use_second_level_cache",env.getProperty("hibernate.cache.use_second_level_cache"));
-        properties.put("hibernate.cache.use_query_cache",env.getProperty("hibernate.cache.use_query_cache"));        em.setJpaPropertyMap(properties);
+        properties.put("hibernate.cache.use_query_cache",env.getProperty("hibernate.cache.use_query_cache"));
+        em.setJpaPropertyMap(properties);
         return em;
     }
 
     @Bean
-    public DataSource refreshWorkDataSource() {
+    public DataSource timeCurrentDataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName(env.getProperty("jdbc.driverClassName"));
-        dataSource.setUrl(env.getProperty("refreshWork.jdbc.url"));
+        dataSource.setUrl(env.getProperty("timeCurrent.jdbc.url"));
         return dataSource;
     }
 
     @Bean
-    public PlatformTransactionManager refreshWorkTransactionManager() {
+    public PlatformTransactionManager timeCurrentTransactionManager() {
         JpaTransactionManager transactionManager = new JpaTransactionManager();
-        transactionManager.setEntityManagerFactory(refreshWorkEntityManager().getObject());
+        transactionManager.setEntityManagerFactory(timeCurrentEntityManager().getObject());
         return transactionManager;
     }
 
     @Primary
-    @Bean(name = "refreshWorkJdbcTemplate")
-    public JdbcTemplate refreshWorkJdbcTemplate() {
-        return new JdbcTemplate(refreshWorkDataSource());
+    @Bean(name = "timeCurrentJdbcTemplate")
+    public JdbcTemplate metricsJdbcTemplate() {
+        return new JdbcTemplate(timeCurrentDataSource());
     }
 
     @Primary
-    @Bean(name = "refreshWorkNamedJdbcTemplate")
-    public NamedParameterJdbcTemplate refreshWorkNamedJdbcTemplate() {
-        return new NamedParameterJdbcTemplate(refreshWorkDataSource());
-    }
-
-    @Primary
-    @Bean(name = "refreshWorkTransactionTemplate")
-    public TransactionTemplate refreshWorkTransactionTemplate(){
-        return new TransactionTemplate(refreshWorkTransactionManager());
+    @Bean(name = "timeCurrentNamedJdbcTemplate")
+    public NamedParameterJdbcTemplate metricsNamedJdbcTemplate() {
+        return new NamedParameterJdbcTemplate(timeCurrentDataSource());
     }
 }

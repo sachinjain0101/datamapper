@@ -33,19 +33,17 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
 
-@Component
-public class Mapper {
+public class Mapper implements Runnable{
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Mapper.class);
     private static final String JAVASCRIPT_ENGINE_NAME = "nashorn";
     private static final String ASSIGNMENT_PROCESSOR_REST_URL = "ASSIGNMENT_PROCESSOR_REST_URL";
 
-    final MapDAO mapDAO;
-    final ValidatedMessagesDAO validatedMessagesDAO;
-    final MappedMessagesDAO mappedMessagesDAO;
-    final AssignmentProcessorDAO assignmentProcessorDAO;
+    private final MapDAO mapDAO;
+    private final ValidatedMessagesDAO validatedMessagesDAO;
+    private final MappedMessagesDAO mappedMessagesDAO;
+    private final AssignmentProcessorDAO assignmentProcessorDAO;
 
-    @Autowired
     public Mapper(MapDAO mapDAO, ValidatedMessagesDAO validatedMessagesDAO, MappedMessagesDAO mappedMessagesDAO, AssignmentProcessorDAO assignmentProcessorDAO) {
         this.validatedMessagesDAO = validatedMessagesDAO;
         this.mappedMessagesDAO = mappedMessagesDAO;
@@ -55,7 +53,7 @@ public class Mapper {
 
     private List<TblIntegrationValidatedMessages> validatedMessages;
 
-    @Scheduled(fixedDelay = 5000, initialDelay = 1000)
+    @Override
     public void run() {
         LOGGER.debug("Running the Data Mapper");
         validatedMessages = validatedMessagesDAO.findAllValidated();
@@ -87,39 +85,28 @@ public class Mapper {
 
     private Boolean createAssignmentProcessorRecord(String client, String integrationKey, String messageId, String mapName, int noOfAssignments) throws Exception{
         TblIntegrationAssignmentProcessor ap = new TblIntegrationAssignmentProcessor();
-        try {
-            ap.setClient(client);
-            ap.setIntegrationKey(integrationKey);
-            ap.setMapName(mapName);
-            ap.setMessageId(messageId);
-            ap.setNoOfAssignments(noOfAssignments);
-            ap.setFileName("Coming in from Opera");
-            ap.setStatus("Ready");
-            assignmentProcessorDAO.save(ap);
-            return true;
-        }catch(Exception e){
-            throw e;
-        }
+        ap.setClient(client);
+        ap.setIntegrationKey(integrationKey);
+        ap.setMapName(mapName);
+        ap.setMessageId(messageId);
+        ap.setNoOfAssignments(noOfAssignments);
+        ap.setFileName("Coming in from Opera");
+        ap.setStatus("Ready");
+        assignmentProcessorDAO.save(ap);
+        return true;
     }
 
     private ResponseEntity<List<TargetAssignments>> postData(List<TargetAssignments> targetAssignments) throws Exception{
-        URI uri;
-        try {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        URI uri = new URI(mapDAO.getIntegrationConfig().get(ASSIGNMENT_PROCESSOR_REST_URL));
+        RestTemplate restTemplate = new RestTemplate();
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
-            uri = new URI(mapDAO.getIntegrationConfig().get(ASSIGNMENT_PROCESSOR_REST_URL));
-            RestTemplate restTemplate = new RestTemplate();
+        LOGGER.debug("Found {}", uri.toString());
+        ObjectMapper mapper = new ObjectMapper();
 
-            LOGGER.debug("Found {}", uri.toString());
-            ObjectMapper mapper = new ObjectMapper();
-
-            HttpEntity<Object> requestEntity = new HttpEntity<>(mapper.writeValueAsString(targetAssignments), headers);
-            restTemplate.exchange(uri, HttpMethod.POST, requestEntity,String.class);
-
-        } catch (Exception e) {
-            throw e;
-        }
+        HttpEntity<Object> requestEntity = new HttpEntity<>(mapper.writeValueAsString(targetAssignments), headers);
+        restTemplate.exchange(uri, HttpMethod.POST, requestEntity,String.class);
 
         return new ResponseEntity<>(targetAssignments, HttpStatus.OK);
     }
@@ -173,7 +160,7 @@ public class Mapper {
     // Entry Point from RestURl
     public List<TargetAssignments> processMapping(SourceAssignments srcAsses) throws Exception {
         LOGGER.debug("Processing DataMapping for {}", srcAsses.toString());
-        LOGGER.debug("Received : {}", srcAsses.getData().toString());
+        LOGGER.debug("Received : {}", Arrays.toString(srcAsses.getData()));
         Gson gson = new Gson();
         List<TargetAssignments> targetAssignments = new ArrayList<>();
 
@@ -188,9 +175,8 @@ public class Mapper {
 
             // Process the mapping (Source to Target)
             for (Map<String, Object> assignmentMap : assignmentMaps) {
-                TargetAssignments req = null;
                 Integer recID=1;
-                req = gson.fromJson(processMapDefs(mapDefs, assignmentMap, srcAsses, recID), TargetAssignments.class);
+                TargetAssignments req = gson.fromJson(processMapDefs(mapDefs, assignmentMap, srcAsses, recID), TargetAssignments.class);
                 targetAssignments.add(req);
                 recID++;
             }
@@ -222,22 +208,28 @@ public class Mapper {
                 String genID = genRandomInt().toString();
 
                 // Handler for the remaining attributes
-                if (m.getAttribute().equals("IntegrationKey"))
-                    val = sourceAssignments.getIntegrationKey();
-                else if (m.getAttribute().equals("Client"))
-                    val = sourceAssignments.getClient();
-                else if (m.getAttribute().equals("MessageID"))
-                    val = sourceAssignments.getMessageId();
-                else if (m.getAttribute().equals("Client"))
-                    val = sourceAssignments.getClient();
-                else if (m.getAttribute().equals("TransDateTime")) {
-                    String pattern = "yyyy-MM-dd HH:mm:ss.SSS";
-                    SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
-                    val = simpleDateFormat.format(new Date());
-                } else if (m.getAttribute().equals("JobID"))
-                    val = "";
-                else if (m.getAttribute().equals("RecID"))
-                    val = recID.toString();
+                switch (m.getAttribute()) {
+                    case "IntegrationKey":
+                        val = sourceAssignments.getIntegrationKey();
+                        break;
+                    case "Client":
+                        val = sourceAssignments.getClient();
+                        break;
+                    case "MessageID":
+                        val = sourceAssignments.getMessageId();
+                        break;
+                    case "TransDateTime":
+                        String pattern = "yyyy-MM-dd HH:mm:ss.SSS";
+                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+                        val = simpleDateFormat.format(new Date());
+                        break;
+                    case "JobID":
+                        val = "";
+                        break;
+                    case "RecID":
+                        val = recID.toString();
+                        break;
+                }
 
                 //LOGGER.debug("{} - {}", m.getAttribute(), val);
                 outMap.put(m.getAttribute(), val);

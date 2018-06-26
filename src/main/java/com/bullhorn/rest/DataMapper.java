@@ -28,15 +28,17 @@ public class DataMapper {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(DataMapper.class);
 
-	final ValidatedMessagesDAO validatedMessagesDAO;
-	final MapDAO mapDAO;
-	final MappedMessagesDAO mappedMessagesDAO;
-	final Mapper mapper;
-	final AssignmentProcessorDAO assignmentProcessorDAO;
+	private final ValidatedMessagesDAO validatedMessagesDAO;
+	private final MapDAO mapDAO;
+	private final MappedMessagesDAO mappedMessagesDAO;
+	private final Mapper mapper;
+	private final AssignmentProcessorDAO assignmentProcessorDAO;
 
     @Autowired
-    public DataMapper(@Qualifier("mapDAO") MapDAO mapDAO, @Qualifier("validatedMessagesDAO") ValidatedMessagesDAO validatedMessagesDAO
-			, @Qualifier("mappedMessagesDAO")MappedMessagesDAO mappedMessagesDAO, @Qualifier("assignmentProcessorDAO")AssignmentProcessorDAO assignmentProcessorDAO,Mapper mapper) {
+    public DataMapper(@Qualifier("mapDAO") MapDAO mapDAO
+			, @Qualifier("validatedMessagesDAO") ValidatedMessagesDAO validatedMessagesDAO
+			, @Qualifier("mappedMessagesDAO")MappedMessagesDAO mappedMessagesDAO
+			, @Qualifier("assignmentProcessorDAO")AssignmentProcessorDAO assignmentProcessorDAO) {
         this.mapDAO = mapDAO;
         this.validatedMessagesDAO = validatedMessagesDAO;
         this.mappedMessagesDAO = mappedMessagesDAO;

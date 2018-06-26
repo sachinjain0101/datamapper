@@ -39,7 +39,7 @@ public class JsonObjectArrayTest {
             Arrays.fill(data,array.get(i));
         }
 
-        System.out.println(data);
+        System.out.println(Arrays.toString(data));
 
         //sourceAssignments.setData(parser.parse(msg.getMessage()).getAsJsonObject().getAsJsonArray());
 

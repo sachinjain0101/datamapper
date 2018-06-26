@@ -4,21 +4,23 @@ import com.google.gson.JsonObject;
 
 import io.swagger.annotations.ApiModelProperty;
 
+import java.util.Arrays;
+
 public class SourceAssignments {
 	@ApiModelProperty(notes="Client integration key [required]")
-	String integrationKey;
+	private String integrationKey;
 	
 	@ApiModelProperty(notes="Map name [required]")
-	String mapName;
+	private String mapName;
 	
 	@ApiModelProperty(notes="Client integration key [required]")
-	String messageId;
+	private String messageId;
 
 	@ApiModelProperty(notes="Client integration key [required]")
-	String client;
+	private String client;
 	
 	@ApiModelProperty(notes="JSON String from Azure")
-	JsonObject[] data;
+	private JsonObject[] data;
 
 	public String getIntegrationKey() {
 		return integrationKey;
@@ -76,7 +78,7 @@ public class SourceAssignments {
 	@Override
 	public String toString() {
 		return "SourceAssignments [integrationKey=" + integrationKey + ", mapName=" + mapName + ", messageId="
-				+ messageId + ", client=" + client + ", data=" + data + "]";
+				+ messageId + ", client=" + client + ", data=" + Arrays.toString(data) + "]";
 	}
 
 }

@@ -1,7 +1,6 @@
 package com.bullhorn.orm.refreshWork.dao;
 
 import com.bullhorn.orm.refreshWork.model.TblIntegrationMappedMessages;
-import com.bullhorn.orm.refreshWork.model.TblIntegrationServiceBusMessages;
 import com.bullhorn.orm.refreshWork.model.TblIntegrationValidatedMessages;
 
 import java.util.List;

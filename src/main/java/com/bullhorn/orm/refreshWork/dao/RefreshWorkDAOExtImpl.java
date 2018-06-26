@@ -1,7 +1,6 @@
 package com.bullhorn.orm.refreshWork.dao;
 
 import com.bullhorn.orm.refreshWork.model.TblIntegrationMappedMessages;
-import com.bullhorn.orm.refreshWork.model.TblIntegrationServiceBusMessages;
 import com.bullhorn.orm.refreshWork.model.TblIntegrationValidatedMessages;
 import com.bullhorn.orm.timecurrent.dao.TimeCurrentDAOExt;
 import org.slf4j.Logger;
@@ -10,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -25,13 +23,14 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TimeCurrentDAOExt.class);
 
-    @Autowired
-    @Qualifier("refreshWorkJdbcTemplate")
-    JdbcTemplate jdbcTemplate;
+    private final EntityManager em;
+    private final JdbcTemplate jdbcTemplate;
 
-    @Autowired
-    @Qualifier("refreshWorkEntityManager")
-    EntityManager em;
+    public RefreshWorkDAOExtImpl(@Qualifier("refreshWorkJdbcTemplate") JdbcTemplate jdbcTemplate
+            ,@Qualifier("refreshWorkEntityManager") EntityManager em) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.em = em;
+    }
 
     @Override
     public void batchInsertMappedMessages(List<TblIntegrationMappedMessages> msgs) {
