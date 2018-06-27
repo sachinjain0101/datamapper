@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @Api(value = "Base resource for Opera-DataMapper")
@@ -43,7 +45,7 @@ public class DataMapper {
         this.validatedMessagesDAO = validatedMessagesDAO;
         this.mappedMessagesDAO = mappedMessagesDAO;
         this.assignmentProcessorDAO = assignmentProcessorDAO;
-        this.mapper = new Mapper(this.mapDAO,this.validatedMessagesDAO,this.mappedMessagesDAO, this.assignmentProcessorDAO);
+        this.mapper = new Mapper(this.mapDAO,this.validatedMessagesDAO,this.mappedMessagesDAO, this.assignmentProcessorDAO,1);
     }
 
 	@ApiOperation(value="Test to see Data Mapper is working or not.")
@@ -69,6 +71,18 @@ public class DataMapper {
 			e.printStackTrace();
 			return new ResponseEntity<>(new ArrayList<>(),HttpStatus.INTERNAL_SERVER_ERROR);
 		}
+	}
+
+	@ApiOperation(value="Gets the Data Mapper thread information.")
+	@RequestMapping(value = "/threads", method = RequestMethod.GET)
+	public List<String> threads(){
+		Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
+		Thread[] threadArray = threadSet.toArray(new Thread[threadSet.size()]);
+		List<String> lst = new ArrayList<>();
+		for(Thread t:threadArray){
+			lst.add(t.getName()+" : "+t.getState().toString());
+		}
+		return lst.stream().filter((s)->s.startsWith("DATA-MAPPER")).collect(Collectors.toList());
 	}
 
 }

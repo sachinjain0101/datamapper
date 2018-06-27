@@ -1,8 +1,8 @@
 package com.bullhorn.services;
 
 import com.bullhorn.app.OperaStatus;
-import com.bullhorn.json.model.TargetAssignments;
 import com.bullhorn.json.model.SourceAssignments;
+import com.bullhorn.json.model.TargetAssignments;
 import com.bullhorn.orm.refreshWork.dao.MappedMessagesDAO;
 import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
 import com.bullhorn.orm.refreshWork.model.TblIntegrationMappedMessages;
@@ -19,10 +19,7 @@ import com.google.gson.JsonParser;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.script.ScriptEngine;
@@ -32,8 +29,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Mapper implements Runnable{
+public class Mapper implements CancellableRunnable{
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Mapper.class);
     private static final String JAVASCRIPT_ENGINE_NAME = "nashorn";
@@ -43,44 +41,64 @@ public class Mapper implements Runnable{
     private final ValidatedMessagesDAO validatedMessagesDAO;
     private final MappedMessagesDAO mappedMessagesDAO;
     private final AssignmentProcessorDAO assignmentProcessorDAO;
+    public final long interval;
 
-    public Mapper(MapDAO mapDAO, ValidatedMessagesDAO validatedMessagesDAO, MappedMessagesDAO mappedMessagesDAO, AssignmentProcessorDAO assignmentProcessorDAO) {
+    private AtomicBoolean processing = new AtomicBoolean();
+
+    public Mapper(MapDAO mapDAO, ValidatedMessagesDAO validatedMessagesDAO
+            , MappedMessagesDAO mappedMessagesDAO, AssignmentProcessorDAO assignmentProcessorDAO, long interval) {
         this.validatedMessagesDAO = validatedMessagesDAO;
         this.mappedMessagesDAO = mappedMessagesDAO;
         this.mapDAO = mapDAO;
         this.assignmentProcessorDAO = assignmentProcessorDAO;
+        this.interval = interval;
     }
 
     private List<TblIntegrationValidatedMessages> validatedMessages;
 
     @Override
     public void run() {
+        processing.set(true);
         LOGGER.debug("Running the Data Mapper");
-        validatedMessages = validatedMessagesDAO.findAllValidated();
-        // Sorting the result to process in the right sequence
-        validatedMessages.sort(Comparator.comparing(TblIntegrationValidatedMessages::getClient).thenComparing(TblIntegrationValidatedMessages::getSequenceNumber));
+        while (!Thread.interrupted() && processing.get()) {
+            validatedMessages = validatedMessagesDAO.findAllValidated();
+            // Sorting the result to process in the right sequence
+            validatedMessages.sort(Comparator.comparing(TblIntegrationValidatedMessages::getClient).thenComparing(TblIntegrationValidatedMessages::getSequenceNumber));
 
-        for (TblIntegrationValidatedMessages msg : validatedMessages) {
-            //TargetAssignments targetAssignments = null;
-            List<TargetAssignments> targetAssignments = new ArrayList<>();
-            TblIntegrationMappedMessages tblIntegrationMappedMessages = null;
-            try {
-                LOGGER.debug("--- --- {} - {} - {}", msg.getClient(), msg.getSequenceNumber(), msg.getStatus());
-                targetAssignments = processMapping(createSourceMessage(msg));
-                if (createAssignmentProcessorRecord(msg.getClient(), msg.getIntegrationKey(), msg.getMessageId(), msg.getMapName(), targetAssignments.size()))
-                    postData(targetAssignments);
-                tblIntegrationMappedMessages = createMappedMessagesRecord(msg, targetAssignments, null);
-                msg.setStatus(OperaStatus.VALIDATED.toString());
-            } catch (Exception e) {
-                mappedMessagesDAO.save(createMappedMessagesRecord(msg, targetAssignments, ExceptionUtils.getStackTrace(e)));
-                msg.setStatus(OperaStatus.VALIDATED_WITH_MAPPING_ERROR.toString());
-                msg.setErrorDescription("Refer to MappedMessages table for description");
+            for (TblIntegrationValidatedMessages msg : validatedMessages) {
+                //TargetAssignments targetAssignments = null;
+                List<TargetAssignments> targetAssignments = new ArrayList<>();
+                TblIntegrationMappedMessages tblIntegrationMappedMessages = null;
+                try {
+                    LOGGER.debug("--- --- {} - {} - {}", msg.getClient(), msg.getSequenceNumber(), msg.getStatus());
+                    targetAssignments = processMapping(createSourceMessage(msg));
+                    if (createAssignmentProcessorRecord(msg.getClient(), msg.getIntegrationKey(), msg.getMessageId(), msg.getMapName(), targetAssignments.size()))
+                        postData(targetAssignments);
+                    tblIntegrationMappedMessages = createMappedMessagesRecord(msg, targetAssignments, null);
+                    msg.setStatus(OperaStatus.VALIDATED.toString());
+                } catch (Exception e) {
+                    mappedMessagesDAO.save(createMappedMessagesRecord(msg, targetAssignments, ExceptionUtils.getStackTrace(e)));
+                    msg.setStatus(OperaStatus.VALIDATED_WITH_MAPPING_ERROR.toString());
+                    msg.setErrorDescription("Refer to MappedMessages table for description");
+                }
+                if (tblIntegrationMappedMessages != null)
+                    mappedMessagesDAO.save(tblIntegrationMappedMessages);
+                validatedMessagesDAO.save(msg);
             }
-            if (tblIntegrationMappedMessages != null)
-                mappedMessagesDAO.save(tblIntegrationMappedMessages);
-            validatedMessagesDAO.save(msg);
+            try {
+                Thread.sleep(interval);
+            } catch (InterruptedException e) {
+                LOGGER.debug("Data Mapper interrupted : {}", e.getMessage());
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
         }
+    }
 
+    @Override
+    public void cancel() {
+        processing.set(false);
+        LOGGER.debug("Stopping the Data Mapper : {}", processing.get());
     }
 
     private Boolean createAssignmentProcessorRecord(String client, String integrationKey, String messageId, String mapName, int noOfAssignments) throws Exception{
@@ -259,12 +277,9 @@ public class Mapper implements Runnable{
         return assignmentList;
     }
 
-
-
     private Integer genRandomInt() {
         int min = 1;
         int max = 2000000000;
         return ThreadLocalRandom.current().nextInt(min, max + 1);
     }
-
 }
