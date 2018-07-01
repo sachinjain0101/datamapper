@@ -8,9 +8,12 @@ import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
 import com.bullhorn.orm.refreshWork.model.TblIntegrationMappedMessages;
 import com.bullhorn.orm.refreshWork.model.TblIntegrationValidatedMessages;
 import com.bullhorn.orm.timecurrent.dao.AssignmentProcessorDAO;
+import com.bullhorn.orm.timecurrent.dao.ClientDAO;
 import com.bullhorn.orm.timecurrent.dao.MapDAO;
+import com.bullhorn.orm.timecurrent.model.Client;
 import com.bullhorn.orm.timecurrent.model.MapVO;
 import com.bullhorn.orm.timecurrent.model.TblIntegrationAssignmentProcessor;
+import com.bullhorn.orm.timecurrent.model.TblIntegrationFrontOfficeSystem;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -38,20 +41,32 @@ public class Mapper implements CancellableRunnable{
     private static final String ASSIGNMENT_PROCESSOR_REST_URL = "ASSIGNMENT_PROCESSOR_REST_URL";
 
     private final MapDAO mapDAO;
+    private final ClientDAO clientDAO;
     private final ValidatedMessagesDAO validatedMessagesDAO;
     private final MappedMessagesDAO mappedMessagesDAO;
     private final AssignmentProcessorDAO assignmentProcessorDAO;
-    public final long interval;
+
+    private HashMap<String, Client> clients;
+    private long interval;
+    public void setInterval(long interval) {
+        this.interval = interval;
+    }
 
     private AtomicBoolean processing = new AtomicBoolean();
 
+    private TblIntegrationFrontOfficeSystem FOS;
+    public void setFOS(TblIntegrationFrontOfficeSystem FOS) {
+        this.FOS = FOS;
+    }
+
     public Mapper(MapDAO mapDAO, ValidatedMessagesDAO validatedMessagesDAO
-            , MappedMessagesDAO mappedMessagesDAO, AssignmentProcessorDAO assignmentProcessorDAO, long interval) {
+            , MappedMessagesDAO mappedMessagesDAO, AssignmentProcessorDAO assignmentProcessorDAO
+            , ClientDAO clientDAO) {
         this.validatedMessagesDAO = validatedMessagesDAO;
         this.mappedMessagesDAO = mappedMessagesDAO;
         this.mapDAO = mapDAO;
         this.assignmentProcessorDAO = assignmentProcessorDAO;
-        this.interval = interval;
+        this.clientDAO = clientDAO;
     }
 
     private List<TblIntegrationValidatedMessages> validatedMessages;
@@ -61,7 +76,8 @@ public class Mapper implements CancellableRunnable{
         processing.set(true);
         LOGGER.debug("Running the Data Mapper");
         while (!Thread.interrupted() && processing.get()) {
-            validatedMessages = validatedMessagesDAO.findAllValidated();
+            clients = clientDAO.getAllActiveClients(FOS.getRecordId());
+            validatedMessages = validatedMessagesDAO.findAllValidated(clients);
             // Sorting the result to process in the right sequence
             validatedMessages.sort(Comparator.comparing(TblIntegrationValidatedMessages::getClient).thenComparing(TblIntegrationValidatedMessages::getSequenceNumber));
 

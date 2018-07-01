@@ -2,10 +2,10 @@ package com.bullhorn;
 
 import com.bullhorn.orm.refreshWork.dao.MappedMessagesDAO;
 import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
-import com.bullhorn.orm.timecurrent.dao.AssignmentProcessorDAO;
-import com.bullhorn.orm.timecurrent.dao.ConfigDAO;
-import com.bullhorn.orm.timecurrent.dao.MapDAO;
+import com.bullhorn.orm.timecurrent.dao.*;
+import com.bullhorn.orm.timecurrent.model.Client;
 import com.bullhorn.orm.timecurrent.model.TblIntegrationConfig;
+import com.bullhorn.orm.timecurrent.model.TblIntegrationFrontOfficeSystem;
 import com.bullhorn.services.MapperHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,41 +42,52 @@ public class DataMapperApplication {
 
 	private final AssignmentProcessorDAO assignmentProcessorDAO;
 	private final ValidatedMessagesDAO validatedMessagesDAO;
+	private final FrontOfficeSystemDAO frontOfficeSystemDAO;
 	private final MapDAO mapDAO;
 	private final MappedMessagesDAO mappedMessagesDAO;
 	private final ConfigDAO configDAO;
+	private final ClientDAO clientDAO;
 
 	@Autowired
 	public DataMapperApplication(MappedMessagesDAO mappedMessagesDAO
 			, MapDAO mapDAO
 			, AssignmentProcessorDAO assignmentProcessorDAO
 			, ValidatedMessagesDAO validatedMessagesDAO
-			, ConfigDAO configDAO) {
+			, ConfigDAO configDAO
+			, FrontOfficeSystemDAO frontOfficeSystemDAO
+			, ClientDAO clientDAO) {
 		this.mapDAO = mapDAO;
 		this.assignmentProcessorDAO = assignmentProcessorDAO;
 		this.validatedMessagesDAO = validatedMessagesDAO;
 		this.mappedMessagesDAO = mappedMessagesDAO;
 		this.configDAO = configDAO;
+		this.frontOfficeSystemDAO = frontOfficeSystemDAO;
+		this.clientDAO = clientDAO;
 	}
 
 	public static void main(String[] args) {
 		SpringApplication.run(DataMapperApplication.class, args);
 	}
 
+	private List<TblIntegrationFrontOfficeSystem> lstFOS = null;
+
 	@Bean(name = "integrationConfig")
 	public List<TblIntegrationConfig> getConfig(){
+		String cluster = (env.getProperty("azureConsumer.clusterName")!=null)?env.getProperty("azureConsumer.clusterName"):"";
+		LOGGER.debug("Cluster info : {} & isEmpty : {}",cluster,cluster.isEmpty());
+		// VIMP: lstFOS drives the AzureConsumer ThreadPool size
+		lstFOS = frontOfficeSystemDAO.findByStatus(true,cluster);
 		return configDAO.findAll();
 	}
 
 	@Bean("mapperTaskScheduler")
+	@DependsOn("integrationConfig")
 	public ThreadPoolTaskScheduler mapperTaskScheduler() {
 		LOGGER.debug("Starting Mapper Task Scheduler");
 		ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
-		TblIntegrationConfig val1 = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATA_MAPPER_POOL_SIZE")).collect(Collectors.toList()).get(0);
-		int poolSize = Integer.parseInt(val1.getCfgValue());
-		threadPoolTaskScheduler.setPoolSize(poolSize);
+		threadPoolTaskScheduler.setPoolSize(lstFOS.size());
 		threadPoolTaskScheduler.setWaitForTasksToCompleteOnShutdown(true);
-		TblIntegrationConfig val2 = getConfig().stream().filter((k) -> k.getCfgKey().equals("THREADPOOL_SCHEDULER_TERMINATION_TIME_INSECONDS")).collect(Collectors.toList()).get(0);
+		TblIntegrationConfig val2 = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATAMAPPER_THREADPOOL_SCHEDULER_TERMINATION_TIME_INSECONDS")).collect(Collectors.toList()).get(0);
 		int terminationTime = Integer.parseInt(val2.getCfgValue());
 		threadPoolTaskScheduler.setAwaitTerminationSeconds(terminationTime);
 		threadPoolTaskScheduler.setThreadNamePrefix("DATA-MAPPER-");
@@ -89,11 +100,10 @@ public class DataMapperApplication {
 		LOGGER.debug("DataMapperAsyncService Constructed");
 		TblIntegrationConfig val1 = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATA_MAPPER_EXECUTE_INTERVAL")).collect(Collectors.toList()).get(0);
 		long interval = Long.parseLong(val1.getCfgValue());
-		TblIntegrationConfig val2 = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATA_MAPPER_POOL_SIZE")).collect(Collectors.toList()).get(0);
-		int poolSize = Integer.parseInt(val2.getCfgValue());
-		MapperHandler mapperHandler = new MapperHandler(mapDAO, validatedMessagesDAO, mappedMessagesDAO, assignmentProcessorDAO);
+		MapperHandler mapperHandler = new MapperHandler(mapDAO, validatedMessagesDAO, mappedMessagesDAO, assignmentProcessorDAO, clientDAO);
 		mapperHandler.setInterval(interval);
-		mapperHandler.setPoolSize(poolSize);
+		mapperHandler.setPoolSize(lstFOS.size());
+		mapperHandler.setLstFOS(lstFOS);
 		return mapperHandler;
 	}
 

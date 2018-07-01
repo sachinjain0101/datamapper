@@ -6,6 +6,7 @@ import com.bullhorn.json.model.TargetMappings;
 import com.bullhorn.orm.refreshWork.dao.MappedMessagesDAO;
 import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
 import com.bullhorn.orm.timecurrent.dao.AssignmentProcessorDAO;
+import com.bullhorn.orm.timecurrent.dao.ClientDAO;
 import com.bullhorn.orm.timecurrent.dao.MapDAO;
 import com.bullhorn.services.Mapper;
 import io.swagger.annotations.Api;
@@ -35,17 +36,20 @@ public class DataMapper {
 	private final MappedMessagesDAO mappedMessagesDAO;
 	private final Mapper mapper;
 	private final AssignmentProcessorDAO assignmentProcessorDAO;
+	private final ClientDAO clientDAO;
 
     @Autowired
     public DataMapper(@Qualifier("mapDAO") MapDAO mapDAO
 			, @Qualifier("validatedMessagesDAO") ValidatedMessagesDAO validatedMessagesDAO
 			, @Qualifier("mappedMessagesDAO")MappedMessagesDAO mappedMessagesDAO
-			, @Qualifier("assignmentProcessorDAO")AssignmentProcessorDAO assignmentProcessorDAO) {
+			, @Qualifier("assignmentProcessorDAO")AssignmentProcessorDAO assignmentProcessorDAO
+			, @Qualifier("clientDAO")ClientDAO clientDAO) {
         this.mapDAO = mapDAO;
         this.validatedMessagesDAO = validatedMessagesDAO;
         this.mappedMessagesDAO = mappedMessagesDAO;
         this.assignmentProcessorDAO = assignmentProcessorDAO;
-        this.mapper = new Mapper(this.mapDAO,this.validatedMessagesDAO,this.mappedMessagesDAO, this.assignmentProcessorDAO,1);
+        this.clientDAO = clientDAO;
+        this.mapper = new Mapper(this.mapDAO,this.validatedMessagesDAO,this.mappedMessagesDAO, this.assignmentProcessorDAO,this.clientDAO);
     }
 
 	@ApiOperation(value="Test to see Data Mapper is working or not.")

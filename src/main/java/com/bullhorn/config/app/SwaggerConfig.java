@@ -22,10 +22,16 @@ public class SwaggerConfig {
 	}
 
 	private ApiInfo metaInfo() {
-		return new ApiInfo("Opera Data Mapper API",
-				"Opera Data Mapper service takes care of Source to Target JSON mapping.", "1.0", "Terms of service",
-				new Contact("Sachin Jain", "https://www.bullhorn.com", "sachin.jain@bullhorn.com"),
-				"Apache License Version 2.0", "https://www.apache.org/licenses/LICENSE-2.0");
+		return new ApiInfo("Opera Data Mapper API"
+				, "This service takes care of Source to Target JSON mapping and then publishing the data to the Assignment Processing service. \n\n" +
+						"Source Table: RefreshWork.dbo.tblIntegrationValidatedMessages \n\n" +
+						"Target Table: RefreshWork.dbo.tblIntegrationMappedMessages \n\n" +
+						"NOTE: It is a multi threaded / multi instance application"
+				, "1.0"
+				, "Terms of service"
+				, new Contact("Sachin Jain", "https://www.bullhorn.com", "sachin.jain@bullhorn.com")
+				, "Apache License Version 2.0"
+				, "https://www.apache.org/licenses/LICENSE-2.0");
 	}
 
 }
