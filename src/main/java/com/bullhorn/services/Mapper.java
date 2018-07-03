@@ -208,8 +208,8 @@ public class Mapper implements CancellableRunnable{
             List<Map<String, Object>> assignmentMaps = listAssignmentsJsonMap(srcAsses.getData());
 
             // Process the mapping (Source to Target)
+            Integer recID=1;
             for (Map<String, Object> assignmentMap : assignmentMaps) {
-                Integer recID=1;
                 TargetAssignments req = gson.fromJson(processMapDefs(mapDefs, assignmentMap, srcAsses, recID), TargetAssignments.class);
                 targetAssignments.add(req);
                 recID++;
@@ -239,8 +239,6 @@ public class Mapper implements CancellableRunnable{
                 if (m.getExpression() != null && !m.getExpression().isEmpty())
                     val = jsEngine.eval(m.getExpression()).toString();
 
-                String genID = genRandomInt().toString();
-
                 // Handler for the remaining attributes
                 switch (m.getAttribute()) {
                     case "IntegrationKey":
@@ -261,7 +259,7 @@ public class Mapper implements CancellableRunnable{
                         val = "";
                         break;
                     case "RecID":
-                        val = recID.toString();
+                        val = String.valueOf(recID);
                         break;
                 }
 
