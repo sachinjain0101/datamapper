@@ -1,5 +1,6 @@
 package com.bullhorn.rest;
 
+import com.bullhorn.app.Constants;
 import com.bullhorn.json.model.TargetAssignments;
 import com.bullhorn.json.model.SourceAssignments;
 import com.bullhorn.json.model.TargetMappings;
@@ -88,7 +89,7 @@ public class DataMapper {
 		for(Thread t:threadArray){
 			lst.add(t.getName()+" : "+t.getState().toString());
 		}
-		return lst.stream().filter((s)->s.startsWith("DATA-MAPPER")).collect(Collectors.toList());
+		return lst.stream().filter((s)->s.startsWith(Constants.DATA_MAPPER)).collect(Collectors.toList());
 	}
 
 }

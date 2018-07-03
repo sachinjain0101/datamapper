@@ -1,9 +1,9 @@
 package com.bullhorn;
 
+import com.bullhorn.app.Constants;
 import com.bullhorn.orm.refreshWork.dao.MappedMessagesDAO;
 import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
 import com.bullhorn.orm.timecurrent.dao.*;
-import com.bullhorn.orm.timecurrent.model.Client;
 import com.bullhorn.orm.timecurrent.model.TblIntegrationConfig;
 import com.bullhorn.orm.timecurrent.model.TblIntegrationFrontOfficeSystem;
 import com.bullhorn.services.MapperHandler;
@@ -87,10 +87,11 @@ public class DataMapperApplication {
 		ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
 		threadPoolTaskScheduler.setPoolSize(lstFOS.size());
 		threadPoolTaskScheduler.setWaitForTasksToCompleteOnShutdown(true);
-		TblIntegrationConfig val2 = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATAMAPPER_THREADPOOL_SCHEDULER_TERMINATION_TIME_INSECONDS")).collect(Collectors.toList()).get(0);
+		TblIntegrationConfig val2 = getConfig().stream()
+				.filter((k) -> k.getCfgKey().equals(Constants.DATA_MAPPER_THREADPOOL_SCHEDULER_TERMINATION_TIME_INSECONDS))
+				.collect(Collectors.toList()).get(0);
 		int terminationTime = Integer.parseInt(val2.getCfgValue());
 		threadPoolTaskScheduler.setAwaitTerminationSeconds(terminationTime);
-		threadPoolTaskScheduler.setThreadNamePrefix("DATA-MAPPER-");
 		return threadPoolTaskScheduler;
 	}
 
@@ -98,7 +99,7 @@ public class DataMapperApplication {
 	@DependsOn("mapperTaskScheduler")
 	public MapperHandler mapperHandler(){
 		LOGGER.debug("DataMapperAsyncService Constructed");
-		TblIntegrationConfig val1 = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATA_MAPPER_EXECUTE_INTERVAL")).collect(Collectors.toList()).get(0);
+		TblIntegrationConfig val1 = getConfig().stream().filter((k) -> k.getCfgKey().equals(Constants.DATA_MAPPER_EXECUTE_INTERVAL)).collect(Collectors.toList()).get(0);
 		long interval = Long.parseLong(val1.getCfgValue());
 		MapperHandler mapperHandler = new MapperHandler(mapDAO, validatedMessagesDAO, mappedMessagesDAO, assignmentProcessorDAO, clientDAO);
 		mapperHandler.setInterval(interval);

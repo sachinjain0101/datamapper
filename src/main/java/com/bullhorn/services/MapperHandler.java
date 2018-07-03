@@ -1,5 +1,6 @@
 package com.bullhorn.services;
 
+import com.bullhorn.app.Constants;
 import com.bullhorn.orm.refreshWork.dao.MappedMessagesDAO;
 import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
 import com.bullhorn.orm.timecurrent.dao.AssignmentProcessorDAO;
@@ -63,6 +64,7 @@ public class MapperHandler {
             Mapper mapper = new Mapper (mapDAO, validatedMessagesDAO, mappedMessagesDAO, assignmentProcessorDAO,clientDAO);
             mapper.setFOS(FOS);
             mapper.setInterval(interval);
+            taskScheduler.setThreadNamePrefix(String.format(Constants.DATA_MAPPER_THREAD_POOL_PREFIX,FOS.getName()));
             Future<?> future = taskScheduler.submit(mapper);
             cancellableFutures.put(mapper, future);
         }

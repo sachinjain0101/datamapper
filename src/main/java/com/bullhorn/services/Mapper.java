@@ -1,5 +1,6 @@
 package com.bullhorn.services;
 
+import com.bullhorn.app.Constants;
 import com.bullhorn.app.OperaStatus;
 import com.bullhorn.json.model.SourceAssignments;
 import com.bullhorn.json.model.TargetAssignments;
@@ -38,7 +39,6 @@ public class Mapper implements CancellableRunnable{
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Mapper.class);
     private static final String JAVASCRIPT_ENGINE_NAME = "nashorn";
-    private static final String ASSIGNMENT_PROCESSOR_REST_URL = "ASSIGNMENT_PROCESSOR_REST_URL";
 
     private final MapDAO mapDAO;
     private final ClientDAO clientDAO;
@@ -133,7 +133,7 @@ public class Mapper implements CancellableRunnable{
     private ResponseEntity<List<TargetAssignments>> postData(List<TargetAssignments> targetAssignments) throws Exception{
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        URI uri = new URI(mapDAO.getIntegrationConfig().get(ASSIGNMENT_PROCESSOR_REST_URL));
+        URI uri = new URI(mapDAO.getIntegrationConfig().get(Constants.PNET_ASSIGNMENT_PROCESSOR_REST_URL));
         RestTemplate restTemplate = new RestTemplate();
 
         LOGGER.debug("Found {}", uri.toString());
