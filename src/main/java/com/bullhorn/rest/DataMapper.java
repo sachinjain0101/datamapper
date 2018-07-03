@@ -67,13 +67,15 @@ public class DataMapper {
 	@ApiOperation(value = "Processes the source JSON and gives out the destination JSON.")
 	@RequestMapping(value = "/process",method = RequestMethod.POST, produces = "application/json")
 	@ResponseBody
-	public ResponseEntity<List<TargetAssignments>> Process(@RequestBody SourceAssignments srcAsses) {
+	public ResponseEntity<List<?>> Process(@RequestBody SourceAssignments srcAsses) {
 		LOGGER.debug("{}",srcAsses.toString());
 		try {
 			return new ResponseEntity<>(mapper.processMapping(srcAsses),HttpStatus.OK);
 		} catch (Exception e) {
 			e.printStackTrace();
-			return new ResponseEntity<>(new ArrayList<>(),HttpStatus.INTERNAL_SERVER_ERROR);
+			List<String> errLst = new ArrayList<>();
+			errLst.add(e.getMessage());
+			return new ResponseEntity<>(errLst,HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
