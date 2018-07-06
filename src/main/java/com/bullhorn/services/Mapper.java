@@ -15,12 +15,16 @@ import com.bullhorn.orm.timecurrent.model.Client;
 import com.bullhorn.orm.timecurrent.model.MapVO;
 import com.bullhorn.orm.timecurrent.model.TblIntegrationAssignmentProcessor;
 import com.bullhorn.orm.timecurrent.model.TblIntegrationFrontOfficeSystem;
+import com.bullhorn.utils.FuncEnum;
+import com.bullhorn.utils.Functions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
@@ -39,6 +43,7 @@ public class Mapper implements CancellableRunnable{
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Mapper.class);
     private static final String JAVASCRIPT_ENGINE_NAME = "nashorn";
+    private static final String HASH = "#";
 
     private final MapDAO mapDAO;
     private final ClientDAO clientDAO;
@@ -236,8 +241,6 @@ public class Mapper implements CancellableRunnable{
                 String val = "";
                 // Execution of JS expression
                 // LOGGER.debug("******* {} {}", m.getExpression());
-                if (m.getExpression() != null && !m.getExpression().isEmpty())
-                    val = jsEngine.eval(m.getExpression()).toString();
 
                 // Handler for the remaining attributes
                 switch (m.getAttribute()) {
@@ -261,9 +264,31 @@ public class Mapper implements CancellableRunnable{
                     case "RecID":
                         val = String.valueOf(recID);
                         break;
+                    default:
+                        if (m.getExpression().contains(HASH)) {
+                            String[] pieces = m.getExpression().split(HASH);
+                            val = jsEngine.eval(pieces[1]).toString();
+
+                            LOGGER.debug("{} - {} - {}",m.getExpression(),pieces,val);
+
+                            switch (FuncEnum.valueOf(pieces[0])) {
+                                case STATE_CODE_CONVERSION:
+                                    val = Functions.getStateCode(val);
+                                    break;
+                                case UNIX_MILLISEC_CONVERSION:
+                                    if(val!=null && val.matches("\\d+")) {
+                                        DateTime dateTime = new DateTime(Long.valueOf(val));
+                                        val = dateTime.toDateTime(DateTimeZone.UTC).toString();
+                                    }else
+                                        val="";
+                                    break;
+                            }
+                        }
+                        else if (m.getExpression() != null && !m.getExpression().isEmpty())
+                            val = jsEngine.eval(m.getExpression()).toString();
                 }
 
-                //LOGGER.debug("{} - {}", m.getAttribute(), val);
+                LOGGER.debug("{} - {}", m.getAttribute(), val);
                 outMap.put(m.getAttribute(), val);
             }
         } catch (Exception e) {
