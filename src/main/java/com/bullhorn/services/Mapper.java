@@ -93,7 +93,9 @@ public class Mapper implements CancellableRunnable{
                 try {
                     LOGGER.debug("--- --- {} - {} - {}", msg.getClient(), msg.getSequenceNumber(), msg.getStatus());
                     targetAssignments = processMapping(createSourceMessage(msg));
-                    if (createAssignmentProcessorRecord(msg.getClient(), msg.getIntegrationKey(), msg.getMessageId(), msg.getMapName(), targetAssignments.size()))
+                    LOGGER.debug("--- --- {}",targetAssignments);
+                    boolean done = createAssignmentProcessorRecord(msg.getClient(), msg.getIntegrationKey(), msg.getMessageId(), msg.getMapName(), targetAssignments.size());
+                    if (done)
                         postData(targetAssignments);
                     tblIntegrationMappedMessages = createMappedMessagesRecord(msg, targetAssignments, null);
                     msg.setStatus(OperaStatus.VALIDATED.toString());
@@ -143,8 +145,10 @@ public class Mapper implements CancellableRunnable{
 
         LOGGER.debug("Found {}", uri.toString());
         ObjectMapper mapper = new ObjectMapper();
+        String postMsg = mapper.writeValueAsString(targetAssignments);
+        LOGGER.debug("POST-ing message - {}",postMsg);
 
-        HttpEntity<Object> requestEntity = new HttpEntity<>(mapper.writeValueAsString(targetAssignments), headers);
+        HttpEntity<Object> requestEntity = new HttpEntity<>(postMsg, headers);
         restTemplate.exchange(uri, HttpMethod.POST, requestEntity,String.class);
 
         return new ResponseEntity<>(targetAssignments, HttpStatus.OK);
@@ -223,6 +227,7 @@ public class Mapper implements CancellableRunnable{
             LOGGER.error("{}", e.getMessage());
             throw e;
         }
+        LOGGER.debug("Transformed : {}", targetAssignments);
 
         return targetAssignments;
     }
@@ -284,15 +289,17 @@ public class Mapper implements CancellableRunnable{
                                     break;
                             }
                         }
-                        else if (m.getExpression() != null && !m.getExpression().isEmpty())
+                        else if (m.getExpression() != null && !m.getExpression().isEmpty()) {
+                            LOGGER.debug("Expression to eval: {}", m.getExpression());
                             val = jsEngine.eval(m.getExpression()).toString();
+                        }
                 }
 
                 LOGGER.debug("{} - {}", m.getAttribute(), val);
                 outMap.put(m.getAttribute(), val);
             }
         } catch (Exception e) {
-            LOGGER.error("{}", e.getMessage());
+            LOGGER.debug("{}", e.getMessage());
             throw e;
         }
 
